@@ -38,7 +38,7 @@ export type ICompanyRelation = {
 
 export const companyDemoData: ICompanyListItem[] = [
   { Id: 1, Title: "Alpha Holding", CSColorScheme: 1, CSGrundKapital: 5000000, CSStammKapital: 2000000, CSAUVU: "VU", CSLocation: "Berlin", CSCoordX: 0, CSCoordY: 0, CSTeil: 100 },
-  { Id: 2, Title: "Beta Group", CSColorScheme: 2, CSGrundKapital: 4200000, CSStammKapital: 1500000, CSAUVU: "AU", CSLocation: "Hamburg", CSCoordX: 300, CSCoordY: 0, CSTeil: 100 },
+  { Id: 2, Title: "Beta Group", CSColorScheme: 2, CSGrundKapital: 4200000, CSStammKapital: 1500000, CSAUVU: "AU", CSLocation: "Hamburg", CSCoordX: 0, CSCoordY: 0, CSTeil: 100 },
 
   { Id: 3, Title: "Alpha Logistics", CSParent: { Id: 1, Title: "Alpha Holding" }, CSColorScheme: 3, CSGrundKapital: 900000, CSStammKapital: 400000, CSAUVU: "BU", CSLocation: "Dortmund", CSTeil: 12 },
   { Id: 4, Title: "Alpha Energy", CSParent: { Id: 1, Title: "Alpha Holding" }, CSColorScheme: 2, CSGrundKapital: 1100000, CSStammKapital: 500000, CSAUVU: "BU", CSLocation: "Essen", CSTeil: 23 },
@@ -101,18 +101,3 @@ export const initialEdges: Edge[] = [
 ];
 
 
-export const companiesToNodes = (  companies: ICompanyListItem[] ): Node<ICompanyListItem>[] => {
-
-  return companies.map((company) => ({
-    id: company.Id.toString(),
-
-    position: {
-      x: company.CSCoordX ?? 0,
-      y: company.CSCoordY ?? 0
-    },
-
-    data: company,
-
-    type: 'custom' // optional custom node type
-  }));
-};
