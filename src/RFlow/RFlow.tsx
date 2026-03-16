@@ -15,9 +15,11 @@ import {
 
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
-import { companiesToNodes, companyDemoData, type ICompanyListItem } from './RFlowData';
+import { companyDemoData, type ICompanyListItem } from './RFlowData';
 
 import './styles.css'
+import { companiesToNodes } from './RFlowDataProcessing';
+import type { HOrgFlowNode } from './HOrgFlowData';
 
 
 export const RFlow = () => {
@@ -38,8 +40,8 @@ export const RFlow = () => {
 
 
   React.useEffect( () => {
-    const items = companiesToNodes(companyDemoData)
-    setNodes(items)
+    const items:HOrgFlowNode[] = companiesToNodes(companyDemoData)
+    setNodes([])
     
   }, [])
   

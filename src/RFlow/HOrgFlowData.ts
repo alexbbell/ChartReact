@@ -8,6 +8,8 @@ import type {
   ICompanyListItem,
   ICompanyRelation
 } from './RFlowData';
+import { normalizeStructure } from '../H2/h2helpers';
+import type { CustomEdgeData } from './CustomEdge';
 
 export type TVuau = 'VU' | 'AU' | 'BU' | 'GU';
 
@@ -137,33 +139,6 @@ const createNodeFromItem = (
     height: NODE_HEIGHT,
   },
 });
-
-const normalizeStructure = (items: ICompanyListItem[]): {
-  companies: ICompanyListItem[];
-  relations: ICompanyRelation[];
-} => {
-  const companyMap = new Map<number, ICompanyListItem>();
-  const relations: ICompanyRelation[] = [];
-
-  items.forEach((item) => {
-    if (!companyMap.has(item.Id)) {
-      companyMap.set(item.Id, item);
-    }
-
-    if (item.CSParent?.Id) {
-      relations.push({
-        parentId: item.CSParent.Id,
-        childId: item.Id,
-        share: item.CSTeil,
-      });
-    }
-  });
-
-  return {
-    companies: Array.from(companyMap.values()),
-    relations,
-  };
-};
 
 
 
@@ -301,33 +276,153 @@ export const buildHOrgNodes = (items: ICompanyListItem[]): HOrgFlowNode[] => {
 };
 
 
-export const buildHOrgEdges = (items: ICompanyListItem[]): Edge[] => {
+
+
+export type HOrgEdge = Edge<CustomEdgeData, 'custom'>;
+
+export const buildHOrgEdges = (items: ICompanyListItem[]): HOrgEdge[] => {
   const { relations } = normalizeStructure(items);
 
   return relations.map((r, index) => ({
     id: `e${index}`,
     source: getNodeId(r.parentId),
     target: getNodeId(r.childId),
-    type: 'smoothstep',
-    label: r.share !== null ? `${r.share}%` : undefined,
+    type: 'custom',
+    data: {
+      label: r.share !== null ? `${r.share}%` : undefined,
+    },
     markerEnd: {
       type: MarkerType.Arrow,
     },
     style: {
-      strokeWidth: 1.5,
-    },
-    labelStyle: {
-      fontSize: 14,
-      fontWeight: 600,
+      strokeWidth: 1.4,
     },
   }));
 };
+
+
+
+
+
+export const buildHOrgNodes2 = (items: ICompanyListItem[]): HOrgFlowNode[] => {
+  const { companies, relations } = normalizeStructure(items);
+  const companyMap = new Map<number, ICompanyListItem>(
+    companies.map((c) => [c.Id, c])
+  );
+
+  const nodeMap = new Map<number, HOrgFlowNode>();
+  const parentChildren = new Map<number, number[]>();
+  const parentsByChild = new Map<number, number[]>();
+
+  relations.forEach((r) => {
+    if (!parentChildren.has(r.parentId)) {
+      parentChildren.set(r.parentId, []);
+    }
+    parentChildren.get(r.parentId)!.push(r.childId);
+
+    if (!parentsByChild.has(r.childId)) {
+      parentsByChild.set(r.childId, []);
+    }
+    parentsByChild.get(r.childId)!.push(r.parentId);
+  });
+
+  parentChildren.forEach((childIds, parentId) => {
+    const uniqueSorted = Array.from(new Set(childIds)).sort((a, b) => {
+      const ca = companyMap.get(a)?.Title ?? '';
+      const cb = companyMap.get(b)?.Title ?? '';
+      return ca.localeCompare(cb);
+    });
+
+    parentChildren.set(parentId, uniqueSorted);
+  });
+
+  const roots = companies
+    .filter((c) => !parentsByChild.has(c.Id))
+    .sort((a, b) => (a.Title ?? '').localeCompare(b.Title ?? ''));
+
+  const nodes: HOrgFlowNode[] = [];
+
+  const ROOT_Y = 0;
+  const ROOT_GAP_X = 240;
+  const CHILD_OFFSET_X = 60;
+  const MULTI_PARENT_EXTRA_OFFSET_X = 60;
+
+  const placeNode = (
+    companyId: number,
+    x: number,
+    y: number,
+    depth: number
+  ): number => {
+    if (nodeMap.has(companyId)) {
+      return NODE_HEIGHT;
+    }
+
+    const item = companyMap.get(companyId);
+    if (!item) {
+      return NODE_HEIGHT;
+    }
+
+    const node = createNodeFromItem(item, x, y);
+    nodes.push(node);
+    nodeMap.set(companyId, node);
+
+    const children = parentChildren.get(companyId) ?? [];
+    if (children.length === 0) {
+      return NODE_HEIGHT;
+    }
+
+    let currentY = y + FIRST_CHILD_TOP_GAP;
+    let maxBottom = y + NODE_HEIGHT;
+
+    children.forEach((childId) => {
+      const parentCount = parentsByChild.get(childId)?.length ?? 1;
+
+      const childX =
+        x +
+        CHILD_OFFSET_X +
+        (parentCount > 1 ? MULTI_PARENT_EXTRA_OFFSET_X : 0);
+
+      const childHeight = placeNode(childId, childX, currentY, depth + 1);
+
+      maxBottom = Math.max(maxBottom, currentY + childHeight);
+      currentY += childHeight + VERTICAL_GAP;
+    });
+
+    return maxBottom - y;
+  };
+
+  let currentRootX = 0;
+
+  roots.forEach((root) => {
+    placeNode(root.Id, currentRootX, ROOT_Y, 0);
+    currentRootX += NODE_WIDTH + ROOT_GAP_X;
+  });
+
+  companies.forEach((company) => {
+    if (!nodeMap.has(company.Id)) {
+      const fallbackNode = createNodeFromItem(company, currentRootX, ROOT_Y);
+      nodes.push(fallbackNode);
+      nodeMap.set(company.Id, fallbackNode);
+      currentRootX += NODE_WIDTH + ROOT_GAP_X;
+    }
+  });
+
+  return resolveNodeOverlaps(nodes);
+};
+
+
+
+
+
+
+
+
 
 export const buildHOrgFlow = (
   items: ICompanyListItem[]
 ): { nodes: HOrgFlowNode[]; edges: Edge[] } => {
   return {
-    nodes: buildHOrgNodes(items),
+    nodes: buildHOrgNodes2(items),
     edges: buildHOrgEdges(items),
   };
 };

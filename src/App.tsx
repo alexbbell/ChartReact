@@ -1,7 +1,6 @@
-import { useState } from 'react'
 
 import './App.css'
-import { RFlow } from './RFlow/RFlow'
+import { H2 } from './H2/h2'
 
 function App() {
   
@@ -9,7 +8,9 @@ function App() {
   return (
     <>
       <div>
-      <RFlow />
+        <H2 />
+
+      {/* <RFlow /> */}
       </div>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more

@@ -38,7 +38,7 @@ export type ICompanyRelation = {
 
 export const companyDemoData: ICompanyListItem[] = [
   { Id: 1, Title: "Alpha Holding", CSColorScheme: 1, CSGrundKapital: 5000000, CSStammKapital: 2000000, CSAUVU: "VU", CSLocation: "Berlin", CSCoordX: 0, CSCoordY: 0, CSTeil: 100 },
-  { Id: 2, Title: "Beta Group", CSColorScheme: 2, CSGrundKapital: 4200000, CSStammKapital: 1500000, CSAUVU: "AU", CSLocation: "Hamburg", CSCoordX: 0, CSCoordY: 0, CSTeil: 100 },
+  { Id: 2, Title: "Beta Group", CSColorScheme: 2, CSGrundKapital: 4200000, CSStammKapital: 1500000, CSAUVU: "AU", CSLocation: "Hamburg", CSCoordX: 200, CSCoordY: 0, CSTeil: 100 },
 
   { Id: 3, Title: "Alpha Logistics", CSParent: { Id: 1, Title: "Alpha Holding" }, CSColorScheme: 3, CSGrundKapital: 900000, CSStammKapital: 400000, CSAUVU: "BU", CSLocation: "Dortmund", CSTeil: 12 },
   { Id: 4, Title: "Alpha Energy", CSParent: { Id: 1, Title: "Alpha Holding" }, CSColorScheme: 2, CSGrundKapital: 1100000, CSStammKapital: 500000, CSAUVU: "BU", CSLocation: "Essen", CSTeil: 23 },
@@ -77,7 +77,8 @@ export const companyDemoData: ICompanyListItem[] = [
   { Id: 28, Title: "Alpha Offshore", CSParent: { Id: 10, Title: "Alpha Wind" }, CSColorScheme: 1, CSGrundKapital: 170000, CSStammKapital: 78000, CSAUVU: "GU", CSLocation: "Rostock", CSTeil: 33 },
 
   { Id: 29, Title: "Beta Strategy Global", CSParent: { Id: 14, Title: "Beta Strategy" }, CSColorScheme: 2, CSGrundKapital: 140000, CSStammKapital: 68000, CSAUVU: "GU", CSLocation: "Berlin", CSTeil: 23 },
-  { Id: 30, Title: "Beta Strategy Research", CSParent: { Id: 14, Title: "Beta Strategy" }, CSColorScheme: 3, CSGrundKapital: 145000, CSStammKapital: 70000, CSAUVU: "GU", CSLocation: "Munich", CSTeil: 10 }
+  { Id: 30, Title: "Beta Strategy Research", CSParent: { Id: 14, Title: "Beta Strategy" }, CSColorScheme: 3, CSGrundKapital: 145000, CSStammKapital: 70000, CSAUVU: "GU", CSLocation: "Munich", CSTeil: 10 },
+  { Id: 31, Title: "Beta Strategy Research", CSColorScheme: 3, CSGrundKapital: 145000, CSStammKapital: 70000, CSAUVU: "GU", CSLocation: "Munich", CSTeil: 10 }
 ];
 
 

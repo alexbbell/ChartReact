@@ -1,4 +1,3 @@
-import {  type Node  } from '@xyflow/react';
 import { Position } from "@xyflow/react";
 import type { HOrgFlowNode } from "./HOrgFlowData";
 import type { ICompanyListItem, TVuau } from "./RFlowData";
@@ -11,17 +10,17 @@ const safeNumber = (value: unknown, fallback = 0): number => {
 
 const NODE_WIDTH = 350;
 const NODE_HEIGHT = 82;
+// const VERTICAL_GAP = 40;
 
-const ROOT_HORIZONTAL_GAP = 140;
-const LEVEL1_HORIZONTAL_GAP = 80;
-const FIRST_CHILD_TOP_GAP = 110;
-const VERTICAL_GAP = 40;
-const MULTI_PARENT_OFFSET_X = 40;
+// const ROOT_HORIZONTAL_GAP = 140;
+// const LEVEL1_HORIZONTAL_GAP = 80;
+// const FIRST_CHILD_TOP_GAP = 110;
+// const MULTI_PARENT_OFFSET_X = 40;
 
-const RECT_PADDING_X = 24;
-const RECT_PADDING_Y = 20;
-const RESOLVE_STEP_Y = NODE_HEIGHT + VERTICAL_GAP;
-const MAX_RESOLVE_ITERATIONS = 2000;
+// const RECT_PADDING_X = 24;
+// const RECT_PADDING_Y = 20;
+// const RESOLVE_STEP_Y = NODE_HEIGHT + VERTICAL_GAP;
+// const MAX_RESOLVE_ITERATIONS = 2000;
 
 const mapVuau = (value?: string): TVuau | undefined => {
   if (value === 'VU' || value === 'AU' || value === 'BU' || value === 'GU') {
@@ -57,9 +56,18 @@ export const createNodeFromItem = (  item: ICompanyListItem,   x: number,   y: n
 
 
 
-export const companiesToNodes = (
-  companies: ICompanyListItem[]
-): HOrgFlowNode[] => {
+export const companiesToNodes = ( companies: ICompanyListItem[]): HOrgFlowNode[] => {
+  return companies.map((company) =>
+    createNodeFromItem(
+      company,
+      company.CSCoordX ?? 0,
+      company.CSCoordY ?? 0
+    )
+  );
+};
+
+
+export const companiesToHRNodes = ( companies: ICompanyListItem[]): HOrgFlowNode[] => {
   return companies.map((company) =>
     createNodeFromItem(
       company,
