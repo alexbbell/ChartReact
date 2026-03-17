@@ -54,8 +54,8 @@ export const H2 = () => {
 const CustomNode = ({ data }: NodeProps<Node<HOrgNodeData>>) => {
   const className = (data.colorScheme === 1)? 'companyItem blau' : 'companyItem dunkelblau'
     return (
-        <div className={className}>1{data.title}
-            <Handle type="target" position={Position.Left} />
+        <div className={className}>
+            <Handle type="target" position={Position.Right} />
             <div className='title' dangerouslySetInnerHTML={{ __html: data.title }} />
             {data.location && <div>{data.location}</div>}
             {
@@ -66,7 +66,7 @@ const CustomNode = ({ data }: NodeProps<Node<HOrgNodeData>>) => {
                     
                 </div>
             }
-            <Handle type="source" position={Position.Left}
+            <Handle type="source" position={Position.Right}
                 style={{ top: '15%', background: 'red' }}
             />
         </div>

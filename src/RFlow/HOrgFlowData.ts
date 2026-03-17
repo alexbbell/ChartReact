@@ -143,137 +143,6 @@ const createNodeFromItem = (
 
 
 
-export const buildHOrgNodes = (items: ICompanyListItem[]): HOrgFlowNode[] => {
-  const { companies, relations } = normalizeStructure(items);
-
-  const companyMap = new Map<number, ICompanyListItem>(
-    companies.map((c) => [c.Id, c])
-  );
-
-  const nodeMap = new Map<number, HOrgFlowNode>();
-  const parentChildren = new Map<number, number[]>();
-  const parentsByChild = new Map<number, number[]>();
-
-  relations.forEach((r) => {
-    if (!parentChildren.has(r.parentId)) {
-      parentChildren.set(r.parentId, []);
-    }
-    parentChildren.get(r.parentId)!.push(r.childId);
-
-    if (!parentsByChild.has(r.childId)) {
-      parentsByChild.set(r.childId, []);
-    }
-    parentsByChild.get(r.childId)!.push(r.parentId);
-  });
-
-  const roots = companies
-    .filter((c) => !parentsByChild.has(c.Id))
-    .sort((a, b) => (a.Title ?? '').localeCompare(b.Title ?? ''));
-
-  parentChildren.forEach((childIds, parentId) => {
-    childIds.sort((a, b) => {
-      const ca = companyMap.get(a)?.Title ?? '';
-      const cb = companyMap.get(b)?.Title ?? '';
-      return ca.localeCompare(cb);
-    });
-
-    parentChildren.set(parentId, Array.from(new Set(childIds)));
-  });
-
-  const nodes: HOrgFlowNode[] = [];
-
-  const placeNode = (
-    companyId: number,
-    x: number,
-    y: number,
-    depth: number
-  ): number => {
-    if (nodeMap.has(companyId)) {
-      return NODE_HEIGHT;
-    }
-
-    const item = companyMap.get(companyId);
-    if (!item) {
-      return NODE_HEIGHT;
-    }
-
-    const finalX =
-      typeof item.CSCoordX === 'number' && depth === 0 ? item.CSCoordX : x;
-    const finalY =
-      typeof item.CSCoordY === 'number' && depth === 0 ? item.CSCoordY : y;
-
-    const node = createNodeFromItem(item, finalX, finalY);
-    nodes.push(node);
-    nodeMap.set(companyId, node);
-
-    const children = parentChildren.get(companyId) ?? [];
-    if (children.length === 0) {
-      return NODE_HEIGHT;
-    }
-
-    if (depth === 0) {
-      let currentX = finalX;
-      let maxBottom = finalY + NODE_HEIGHT;
-
-      children.forEach((childId) => {
-        const parentCount = parentsByChild.get(childId)?.length ?? 1;
-        const childX = currentX + (parentCount > 1 ? MULTI_PARENT_OFFSET_X : 0);
-        const childY = finalY + FIRST_CHILD_TOP_GAP;
-
-        const childHeight = placeNode(childId, childX, childY, depth + 1);
-
-        maxBottom = Math.max(maxBottom, childY + childHeight);
-        currentX += NODE_WIDTH + LEVEL1_HORIZONTAL_GAP;
-      });
-
-      return maxBottom - finalY;
-    }
-
-    let currentY = finalY + FIRST_CHILD_TOP_GAP;
-    let maxBottom = finalY + NODE_HEIGHT;
-
-    children.forEach((childId) => {
-      const parentCount = parentsByChild.get(childId)?.length ?? 1;
-      const childX = finalX + (parentCount > 1 ? MULTI_PARENT_OFFSET_X : 0);
-
-      const childHeight = placeNode(childId, childX, currentY, depth + 1);
-
-      maxBottom = Math.max(maxBottom, currentY + childHeight);
-      currentY += childHeight + VERTICAL_GAP;
-    });
-
-    return maxBottom - finalY;
-  };
-
-  let currentRootX = 0;
-
-  roots.forEach((root) => {
-    const x = typeof root.CSCoordX === 'number' ? root.CSCoordX : currentRootX;
-    const y = typeof root.CSCoordY === 'number' ? root.CSCoordY : 0;
-
-    placeNode(root.Id, x, y, 0);
-
-    if (typeof root.CSCoordX !== 'number') {
-      currentRootX += NODE_WIDTH + ROOT_HORIZONTAL_GAP;
-    } else {
-      currentRootX = Math.max(
-        currentRootX,
-        root.CSCoordX + NODE_WIDTH + ROOT_HORIZONTAL_GAP
-      );
-    }
-  });
-
-  companies.forEach((company) => {
-    if (!nodeMap.has(company.Id)) {
-      const fallbackNode = createNodeFromItem(company, currentRootX, 0);
-      nodes.push(fallbackNode);
-      nodeMap.set(company.Id, fallbackNode);
-      currentRootX += NODE_WIDTH + ROOT_HORIZONTAL_GAP;
-    }
-  });
-
-  return resolveNodeOverlaps(nodes);
-};
 
 
 
@@ -293,6 +162,8 @@ export const buildHOrgEdges = (items: ICompanyListItem[]): HOrgEdge[] => {
     },
     markerEnd: {
       type: MarkerType.Arrow,
+      width: 40,
+      height: 30,
     },
     style: {
       strokeWidth: 1.4,
@@ -304,7 +175,7 @@ export const buildHOrgEdges = (items: ICompanyListItem[]): HOrgEdge[] => {
 
 
 
-export const buildHOrgNodes2 = (items: ICompanyListItem[]): HOrgFlowNode[] => {
+export const buildHOrgNodesLeftToRight = (items: ICompanyListItem[]): HOrgFlowNode[] => {
   const { companies, relations } = normalizeStructure(items);
   const companyMap = new Map<number, ICompanyListItem>(
     companies.map((c) => [c.Id, c])
@@ -412,7 +283,115 @@ export const buildHOrgNodes2 = (items: ICompanyListItem[]): HOrgFlowNode[] => {
 
 
 
+export const buildHOrgNodesRightToLeft = (items: ICompanyListItem[]): HOrgFlowNode[] => {
+  const { companies, relations } = normalizeStructure(items);
 
+  const companyMap = new Map<number, ICompanyListItem>(
+    companies.map((c) => [c.Id, c])
+  );
+
+  const nodeMap = new Map<number, HOrgFlowNode>();
+  const parentChildren = new Map<number, number[]>();
+  const parentsByChild = new Map<number, number[]>();
+
+  relations.forEach((r) => {
+    if (!parentChildren.has(r.parentId)) {
+      parentChildren.set(r.parentId, []);
+    }
+    parentChildren.get(r.parentId)!.push(r.childId);
+
+    if (!parentsByChild.has(r.childId)) {
+      parentsByChild.set(r.childId, []);
+    }
+    parentsByChild.get(r.childId)!.push(r.parentId);
+  });
+
+  parentChildren.forEach((childIds, parentId) => {
+    const uniqueSorted = Array.from(new Set(childIds)).sort((a, b) => {
+      const ca = companyMap.get(a)?.Title ?? '';
+      const cb = companyMap.get(b)?.Title ?? '';
+      return ca.localeCompare(cb);
+    });
+
+    parentChildren.set(parentId, uniqueSorted);
+  });
+
+  const roots = companies
+    .filter((c) => !parentsByChild.has(c.Id))
+    .sort((a, b) => (a.Title ?? '').localeCompare(b.Title ?? ''));
+
+  const nodes: HOrgFlowNode[] = [];
+
+  const ROOT_Y = 0;
+  const ROOT_GAP_X = 240;
+
+  // children will be placed to the LEFT of the parent
+  const CHILD_OFFSET_X = 60;
+  const MULTI_PARENT_EXTRA_OFFSET_X = 60;
+
+  const placeNode = (
+    companyId: number,
+    x: number,
+    y: number,
+    depth: number
+  ): number => {
+    if (nodeMap.has(companyId)) {
+      return NODE_HEIGHT;
+    }
+
+    const item = companyMap.get(companyId);
+    if (!item) {
+      return NODE_HEIGHT;
+    }
+
+    const node = createNodeFromItem(item, x, y);
+    nodes.push(node);
+    nodeMap.set(companyId, node);
+
+    const children = parentChildren.get(companyId) ?? [];
+    if (children.length === 0) {
+      return NODE_HEIGHT;
+    }
+
+    let currentY = y + FIRST_CHILD_TOP_GAP;
+    let maxBottom = y + NODE_HEIGHT;
+
+    children.forEach((childId) => {
+      const parentCount = parentsByChild.get(childId)?.length ?? 1;
+
+      const childX =
+        x -
+        CHILD_OFFSET_X -
+        (parentCount > 1 ? MULTI_PARENT_EXTRA_OFFSET_X : 0);
+
+      const childHeight = placeNode(childId, childX, currentY, depth + 1);
+
+      maxBottom = Math.max(maxBottom, currentY + childHeight);
+      currentY += childHeight + VERTICAL_GAP;
+    });
+
+    return maxBottom - y;
+  };
+
+  // start a bit more to the right, because children go to the left
+  let currentRootX = NODE_WIDTH * 2;
+
+  roots.forEach((root) => {
+    placeNode(root.Id, currentRootX, ROOT_Y, 0);
+    currentRootX += NODE_WIDTH + ROOT_GAP_X;
+  });
+
+  companies.forEach((company) => {
+    if (!nodeMap.has(company.Id)) {
+      const fallbackNode = createNodeFromItem(company, currentRootX, ROOT_Y);
+      nodes.push(fallbackNode);
+      nodeMap.set(company.Id, fallbackNode);
+      currentRootX += NODE_WIDTH + ROOT_GAP_X;
+    }
+  });
+
+  return resolveNodeOverlaps(nodes);
+};
 
 
 
@@ -422,7 +401,8 @@ export const buildHOrgFlow = (
   items: ICompanyListItem[]
 ): { nodes: HOrgFlowNode[]; edges: Edge[] } => {
   return {
-    nodes: buildHOrgNodes2(items),
+    // nodes: buildHOrgNodesLeftToRight(items),
+     nodes:buildHOrgNodesRightToLeft(items),
     edges: buildHOrgEdges(items),
   };
 };
