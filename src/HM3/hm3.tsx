@@ -23,7 +23,6 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import './../RFlow/styles.css'
-import { type HOrgNodeData } from '../RFlow/HOrgFlowData';
 import { CustomEdge } from '../RFlow/CustomEdge';
 import { sortedRelations, spCompanies } from './companies';
 import { type H3OrgNodeData, type HOrgFlowNode } from './h3OrgFlowData';
@@ -61,38 +60,69 @@ export const HM3 = () => {
   
 
 const CustomNode = ({ data }: NodeProps<Node<H3OrgNodeData>>) => {
-  
-    return (
-        <div className={'companyItem'}>
-          {
-            data.logo &&  <div
-  style={{
-    backgroundImage: `url(${data.logo})`,
-    backgroundSize: 'contain',
-    backgroundRepeat: 'no-repeat',
-    backgroundPosition: 'center',
-    width: 100,
-    height: 100,
-  }} 
-></div>
-          }
-          <div className='orgInfo'>
-            {data.hasParent && <Handle type="target" position={Position.Right} /> }
-            <div className='title' dangerouslySetInnerHTML={{ __html: data.title }} />
-            {data.city && <div>{data.city} {data.participationType && <span>| {data.participationType}</span>}</div>}
-            
-            {   
-                <div className='bottom'>
-                    {data.kapital !== "" && <div>{data.kapital}</div>}
-                </div>
-            }
-            {
-              data.hasChild && <Handle type="source" position={Position.Right} style={{ top: '15%', background: 'red' }} />
-            }
-            </div>
+  const parentIds = data.parentIds ?? [];
+
+  return (
+    <div className="companyItem">
+      {data.logo && (
+        <div
+          style={{
+            backgroundImage: `url(${data.logo})`,
+            backgroundSize: 'contain',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
+            width: 100,
+            height: 100,
+          }}
+        />
+      )}
+
+      <div className="orgInfo">
+        {parentIds.length <= 1 ? (
+          <Handle type="target" position={Position.Top} id="target-single" />
+        ) : (
+          parentIds.map((parentId, index) => {
+            const left = `${((index + 1) / (parentIds.length + 1)) * 100}%`;
+
+            return (
+              <Handle
+                key={parentId}
+                type="target"
+                position={Position.Right}
+                id={`target-${parentId}`}
+                style={{ left }}
+              />
+            );
+          })
+        )}
+          {data.hasChild && (
+            <Handle
+              type="source"
+              position={Position.Right}
+              style={{ top: '15%', background: 'red' }}
+            />
+          )}
+
+        <div
+          className="title"
+          dangerouslySetInnerHTML={{ __html: data.title }}
+        />
+
+        {data.city && (
+          <div>
+            {data.city} {data.participationType && <span>| {data.participationType}</span>}
+          </div>
+        )}
+
+        <div className="bottom">
+          {data.kapital !== '' && <div>{data.kapital}</div>}
         </div>
-    );
+
+      </div>
+    </div>
+  );
 };
+
 
 const nodeTypes = {
   custom: CustomNode,

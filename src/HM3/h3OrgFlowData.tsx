@@ -11,6 +11,7 @@ export type H3OrgNodeData = {
   // location: string;
   hasParent?: boolean;
   hasChild?: boolean;
+  parentIds?: number[];
 };
 
 export type HOrgFlowNode = Node<H3OrgNodeData, 'custom'>;
@@ -113,7 +114,9 @@ const createNodeFromItem = (
   x: number,
   y: number,
   hasParent: boolean,
-  hasChild: boolean
+  hasChild: boolean,
+  parentIds: number[] = []
+
 ): HOrgFlowNode => ({
   id: getNodeId(item.Id),
   type: 'custom',
@@ -129,6 +132,7 @@ const createNodeFromItem = (
     participationType: item.ParticipationType ?? '',
     url: item.LinkUrl?.Url ?? '',
     logo: item.Logo??'',
+    parentIds,
     hasParent,
     hasChild,
   },
@@ -258,13 +262,15 @@ export const h3buildHOrgFlow = (
     if (!nodeMap.has(company.Id)) {
       const hasParent = parentsByChild.has(company.Id);
       const hasChild = (parentChildren.get(company.Id)?.length ?? 0) > 0;
+      const parentIds = parentsByChild.get(company.Id) ?? [];
 
       const fallbackNode = createNodeFromItem(
         company,
         currentRootX,
         ROOT_START_Y,
         hasParent,
-        hasChild
+        hasChild,
+        parentIds
       );
 
       nodes.push(fallbackNode);
@@ -288,6 +294,55 @@ const formatShareLabel = (share: unknown): string | undefined => {
   }
 
   return `${value}%`;
+};
+
+
+export const h3buildHOrgEdges_m = (
+  relations: IRelation[],
+  companies?: IOrgCompany[]
+): HOrgFlowEdge[] => {
+  const companyIds = companies ? new Set(companies.map((c) => c.Id)) : null;
+
+  const parentsByChild = new Map<number, number[]>();
+
+  for (const r of relations) {
+    if (!parentsByChild.has(r.Child)) {
+      parentsByChild.set(r.Child, []);
+    }
+
+    const arr = parentsByChild.get(r.Child)!;
+    if (!arr.includes(r.Parent)) {
+      arr.push(r.Parent);
+    }
+  }
+
+  return relations
+    .filter((relation) => {
+      if (!companyIds) return true;
+      return companyIds.has(relation.Parent) && companyIds.has(relation.Child);
+    })
+    .map((relation) => {
+      const parentIds = parentsByChild.get(relation.Child) ?? [];
+
+      return {
+        id: getEdgeId(relation.Parent, relation.Child, relation.Id),
+        type: 'custom',
+        source: getNodeId(relation.Parent),
+        target: getNodeId(relation.Child),
+
+        targetHandle:
+          parentIds.length <= 1
+            ? 'target-single'
+            : `target-${relation.Parent}`,
+
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+        },
+        data: {
+          label: formatShareLabel(relation.Share),
+        },
+      };
+    });
 };
 
 export const h3buildHOrgEdges = (
