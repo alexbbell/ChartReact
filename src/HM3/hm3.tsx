@@ -23,12 +23,15 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import './../RFlow/styles.css'
-import { companyDemoData  } from '../RFlow/RFlowData';
-import { buildHOrgFlow, type HOrgFlowNode, type HOrgNodeData } from '../RFlow/HOrgFlowData';
+import { type HOrgNodeData } from '../RFlow/HOrgFlowData';
 import { CustomEdge } from '../RFlow/CustomEdge';
+import { sortedRelations, spCompanies } from './companies';
+import { type H3OrgNodeData, type HOrgFlowNode } from './h3OrgFlowData';
+import { h3buildCompanyDiagram } from './g3OrgBuildCompanyDiag';
 
 
-export const H2 = () => {
+
+export const HM3 = () => {
   const [nodes, setNodes] = React.useState<HOrgFlowNode[]>([]);
   const [edges, setEdges] = React.useState<Edge[]>([]);
 
@@ -44,33 +47,49 @@ export const H2 = () => {
     setEdges((eds) => addEdge(connection, eds));
   }, []);
 
-
-
+  
+  
   React.useEffect( () => {
-    const flow = buildHOrgFlow(companyDemoData);
-    setNodes(flow.nodes);
-    setEdges(flow.edges);
+    console.log('sortedRelation', sortedRelations)
+    //const flow:HOrgFlowNode[] = h3buildHOrgFlow(spCompanies, relations);
+    const { nodes, edges } = h3buildCompanyDiagram(spCompanies, sortedRelations);
+    setNodes(nodes)
+
+    setEdges(edges)
+    // setEdges(flow.edges);
   }, [])
   
 
-const CustomNode = ({ data }: NodeProps<Node<HOrgNodeData>>) => {
-  const className = (data.colorScheme === 1)? 'companyItem blau' : 'companyItem dunkelblau'
+const CustomNode = ({ data }: NodeProps<Node<H3OrgNodeData>>) => {
+  
     return (
-        <div className={className}>
+        <div className={'companyItem'}>
+          {
+            data.logo &&  <div
+  style={{
+    backgroundImage: `url(${data.logo})`,
+    backgroundSize: 'contain',
+    backgroundRepeat: 'no-repeat',
+    backgroundPosition: 'center',
+    width: 100,
+    height: 100,
+  }} 
+></div>
+          }
+          <div className='orgInfo'>
             {data.hasParent && <Handle type="target" position={Position.Right} /> }
             <div className='title' dangerouslySetInnerHTML={{ __html: data.title }} />
-            {data.location && <div>{data.location}</div>}
-            {
-                
+            {data.city && <div>{data.city} {data.participationType && <span>| {data.participationType}</span>}</div>}
+            
+            {   
                 <div className='bottom'>
-                    {data.grundKapital !== 0 && <div>Grundkapital: {data.grundKapital}</div>}
-                    {data.stammKapital !== 0 && <div>Stammkapital: {data.stammKapital}</div>}
-                    
+                    {data.kapital !== "" && <div>{data.kapital}</div>}
                 </div>
             }
-            <Handle type="source" position={Position.Right}
-                style={{ top: '15%', background: 'red' }}
-            />
+            {
+              data.hasChild && <Handle type="source" position={Position.Right} style={{ top: '15%', background: 'red' }} />
+            }
+            </div>
         </div>
     );
 };

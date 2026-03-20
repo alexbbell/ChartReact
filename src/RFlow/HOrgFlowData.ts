@@ -5,8 +5,7 @@ import {
   Position,
 } from '@xyflow/react';
 import type {
-  ICompanyListItem,
-  ICompanyRelation
+  ICompanyListItem
 } from './RFlowData';
 import { normalizeStructure } from '../H2/h2helpers';
 import type { CustomEdgeData } from './CustomEdge';
@@ -20,6 +19,8 @@ export type HOrgNodeData = {
   colorScheme: number;
   location?: string;
   vuau?: TVuau;
+  hasParent?: boolean,
+  hasChild?: boolean
 };
 
 export type HOrgFlowNode = Node<HOrgNodeData, 'custom'>;
@@ -27,11 +28,8 @@ export type HOrgFlowNode = Node<HOrgNodeData, 'custom'>;
 const NODE_WIDTH = 350;
 const NODE_HEIGHT = 82;
 
-const ROOT_HORIZONTAL_GAP = 140;
-const LEVEL1_HORIZONTAL_GAP = 80;
 const FIRST_CHILD_TOP_GAP = 110;
 const VERTICAL_GAP = 40;
-const MULTI_PARENT_OFFSET_X = 40;
 
 const RECT_PADDING_X = 24;
 const RECT_PADDING_Y = 20;
@@ -133,6 +131,8 @@ const createNodeFromItem = (
     colorScheme: safeNumber(item.CSColorScheme, 0),
     location: buildLocation(item),
     vuau: mapVuau(item.CSAUVU),
+    hasParent: (item.CSParent) ? true : false,
+    
   },
   style: {
     width: NODE_WIDTH,
@@ -160,6 +160,7 @@ export const buildHOrgEdges = (items: ICompanyListItem[]): HOrgEdge[] => {
     data: {
       label: r.share !== null ? `${r.share}%` : undefined,
     },
+    markerStart: undefined,
     markerEnd: {
       type: MarkerType.Arrow,
       width: 40,
@@ -285,7 +286,6 @@ export const buildHOrgNodesLeftToRight = (items: ICompanyListItem[]): HOrgFlowNo
 
 export const buildHOrgNodesRightToLeft = (items: ICompanyListItem[]): HOrgFlowNode[] => {
   const { companies, relations } = normalizeStructure(items);
-
   const companyMap = new Map<number, ICompanyListItem>(
     companies.map((c) => [c.Id, c])
   );
@@ -312,7 +312,6 @@ export const buildHOrgNodesRightToLeft = (items: ICompanyListItem[]): HOrgFlowNo
       const cb = companyMap.get(b)?.Title ?? '';
       return ca.localeCompare(cb);
     });
-
     parentChildren.set(parentId, uniqueSorted);
   });
 
@@ -321,7 +320,6 @@ export const buildHOrgNodesRightToLeft = (items: ICompanyListItem[]): HOrgFlowNo
     .sort((a, b) => (a.Title ?? '').localeCompare(b.Title ?? ''));
 
   const nodes: HOrgFlowNode[] = [];
-
   const ROOT_Y = 0;
   const ROOT_GAP_X = 240;
 
@@ -375,7 +373,6 @@ export const buildHOrgNodesRightToLeft = (items: ICompanyListItem[]): HOrgFlowNo
 
   // start a bit more to the right, because children go to the left
   let currentRootX = NODE_WIDTH * 2;
-
   roots.forEach((root) => {
     placeNode(root.Id, currentRootX, ROOT_Y, 0);
     currentRootX += NODE_WIDTH + ROOT_GAP_X;
