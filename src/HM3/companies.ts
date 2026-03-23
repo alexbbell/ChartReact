@@ -47,7 +47,7 @@ export const relations: IRelation[] = [
   { Id: 39, Parent: 8, Child: 51, Share: 49.9 },
   { Id: 40, Parent: 10, Child: 55, Share: 100 },
   { Id: 41, Parent: 30, Child: 50, Share: 100 },
-  { Id: 42, Parent: 39, Child: 42, Share: 41 },
+  // { Id: 42, Parent: 39, Child: 42, Share: 41 },
   { Id: 43, Parent: 39, Child: 60, Share: 2.23 },
   { Id: 44, Parent: 10, Child: 52, Share: 40 },
   { Id: 45, Parent: 10, Child: 53, Share: 40 },

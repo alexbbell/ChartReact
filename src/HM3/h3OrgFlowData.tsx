@@ -2,6 +2,7 @@ import { Position, MarkerType, type Node, type Edge } from '@xyflow/react';
 import type { IOrgCompany, IRelation } from './hm3int';
 
 export type H3OrgNodeData = {
+  id: number,
   title: string;
   kapital: string;
   city: string;
@@ -126,6 +127,7 @@ const createNodeFromItem = (
 
   /// Mapping fields
   data: {
+    id: item.Id ?? 0,
     title: item.Title ?? '',
     kapital: item.Value ?? '',
     city: item.City ?? '',
@@ -199,55 +201,70 @@ export const h3buildHOrgFlow = (
 
   const nodes: HOrgFlowNode[] = [];
 
-  const placeNode = (
-    companyId: number,
-    x: number,
-    y: number,
-    level: number
-  ): number => {
-    if (nodeMap.has(companyId)) {
-      return y + NODE_HEIGHT;
-    }
+  
+  
+const placeNode = (
+  companyId: number,
+  x: number,
+  y: number,
+  level: number
+): number => {
+  const existingNode = nodeMap.get(companyId);
+  if (existingNode) {
+    const parentIds = parentsByChild.get(companyId) ?? [];
+    existingNode.data.parentIds = parentIds;
+    existingNode.data.hasParent = parentIds.length > 0;
+    return y + NODE_HEIGHT;
+  }
 
-    const item = companyMap.get(companyId);
-    if (!item) {
-      return y;
-    }
+  const item = companyMap.get(companyId);
+  if (!item) {
+    return y;
+  }
 
-    const hasParent = parentsByChild.has(companyId);
-    const childRelations = parentChildren.get(companyId) ?? [];
-    const hasChild = childRelations.length > 0;
+  const parentIds = parentsByChild.get(companyId) ?? [];
+  const hasParent = parentIds.length > 0;
+  const childRelations = parentChildren.get(companyId) ?? [];
+  const hasChild = childRelations.length > 0;
 
-    const node = createNodeFromItem(item, x, y, hasParent, hasChild);
-    nodes.push(node);
-    nodeMap.set(companyId, node);
+  const node = createNodeFromItem(
+    item,
+    x,
+    y,
+    hasParent,
+    hasChild,
+    parentIds
+  );
 
-    if (!hasChild) {
-      return y + NODE_HEIGHT;
-    }
+  nodes.push(node);
+  nodeMap.set(companyId, node);
 
-    let subtreeBottom = y + NODE_HEIGHT;
-    let currentChildY = y + LEVEL_OFFSET_Y;
+  if (!hasChild) {
+    return y + NODE_HEIGHT;
+  }
 
-    for (const relation of childRelations) {
-      const childId = relation.Child;
+  let subtreeBottom = y + NODE_HEIGHT;
+  let currentChildY = y + LEVEL_OFFSET_Y;
 
-      // чуть вправо на каждом уровне
-      const childX = x - LEVEL_OFFSET_X;
+  for (const relation of childRelations) {
+    const childId = relation.Child;
+    const childX = x - LEVEL_OFFSET_X;
 
-      const childBottom = placeNode(
-        childId,
-        childX,
-        currentChildY,
-        level + 1
-      );
+    const childBottom = placeNode(
+      childId,
+      childX,
+      currentChildY,
+      level + 1
+    );
 
-      subtreeBottom = Math.max(subtreeBottom, childBottom);
-      currentChildY = childBottom + SIBLING_GAP_Y;
-    }
+    subtreeBottom = Math.max(subtreeBottom, childBottom);
+    currentChildY = childBottom + SIBLING_GAP_Y;
+  }
 
-    return subtreeBottom;
-  };
+  return subtreeBottom;
+};
+
+
 
   let currentRootX = ROOT_START_X;
 
@@ -259,6 +276,7 @@ export const h3buildHOrgFlow = (
 
   // fallback для orphan/cycle/isolated nodes
   for (const company of spCompanies) {
+    console.log('spCompanies', nodeMap)
     if (!nodeMap.has(company.Id)) {
       const hasParent = parentsByChild.has(company.Id);
       const hasChild = (parentChildren.get(company.Id)?.length ?? 0) > 0;
@@ -351,23 +369,45 @@ export const h3buildHOrgEdges = (
 ): HOrgFlowEdge[] => {
   const companyIds = companies ? new Set(companies.map((c) => c.Id)) : null;
 
+  const parentsByChild = new Map<number, number[]>();
+
+  for (const r of relations) {
+    if (!parentsByChild.has(r.Child)) {
+      parentsByChild.set(r.Child, []);
+    }
+
+    const arr = parentsByChild.get(r.Child)!;
+    if (!arr.includes(r.Parent)) {
+      arr.push(r.Parent);
+    }
+  }
+
   return relations
     .filter((relation) => {
-      if (!companyIds) {
-        return true;
-      }
+      if (!companyIds) return true;
       return companyIds.has(relation.Parent) && companyIds.has(relation.Child);
     })
-    .map((relation) => ({
-      id: getEdgeId(relation.Parent, relation.Child, relation.Id),
-      type: 'custom',
-      source: getNodeId(relation.Parent),
-      target: getNodeId(relation.Child),
-      markerEnd: {
-        type: MarkerType.ArrowClosed,
-      },
-      data: {
-        label: formatShareLabel(relation.Share),
-      },
-    }));
+    .map((relation) => {
+      const parentIds = parentsByChild.get(relation.Child) ?? [];
+      const index = parentIds.indexOf(relation.Parent);
+
+      return {
+        id: getEdgeId(relation.Parent, relation.Child, relation.Id),
+        type: 'custom',
+        source: getNodeId(relation.Parent),
+        target: getNodeId(relation.Child),
+        targetHandle:
+          parentIds.length <= 1
+            ? 'target-single'
+            : `target-${relation.Parent}`,
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+        },
+        data: {
+          label: formatShareLabel(relation.Share),
+          offsetIndex: index,
+          total: parentIds.length,
+        },
+      };
+    });
 };

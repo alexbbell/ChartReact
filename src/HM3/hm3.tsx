@@ -61,7 +61,7 @@ export const HM3 = () => {
 
 const CustomNode = ({ data }: NodeProps<Node<H3OrgNodeData>>) => {
   const parentIds = data.parentIds ?? [];
-
+//console.log('parentIds', parentIds)
   return (
     <div className="companyItem">
       {data.logo && (
@@ -78,34 +78,42 @@ const CustomNode = ({ data }: NodeProps<Node<H3OrgNodeData>>) => {
       )}
 
       <div className="orgInfo">
+        
         {parentIds.length <= 1 ? (
-          <Handle type="target" position={Position.Top} id="target-single" />
+          <>
+         <Handle type="target" position={Position.Top} id="target-single" />
+          </>
         ) : (
           parentIds.map((parentId, index) => {
-            const left = `${((index + 1) / (parentIds.length + 1)) * 100}%`;
-
+            const top = `${((index + 1) / (parentIds.length + 1)) * 100}%`;
+            const pos = (index % 2 === 0) ? Position.Right:  Position.Right;
             return (
+              <>
               <Handle
                 key={parentId}
-                type="target"
-                position={Position.Right}
+                type="target" 
+                position={pos}
                 id={`target-${parentId}`}
-                style={{ left }}
+              style={{ top }}
               />
+              </>
             );
           })
         )}
-          {data.hasChild && (
+
+
+          {data.hasChild &&  (
+
             <Handle
               type="source"
               position={Position.Right}
-              style={{ top: '15%', background: 'red' }}
+              style={{ top: '25%', background: 'red' }}
             />
           )}
-
+        <div>{data.id}</div>
         <div
           className="title"
-          dangerouslySetInnerHTML={{ __html: data.title }}
+          dangerouslySetInnerHTML={{ __html: data.title }} 
         />
 
         {data.city && (

@@ -10,6 +10,7 @@ export const h3buildCompanyDiagram = (
 } => {
   const nodes = h3buildHOrgFlow(spCompanies, relations);
   const edges = h3buildHOrgEdges(relations, spCompanies);
+  console.log('edges', edges)
 
   return {
     nodes,
